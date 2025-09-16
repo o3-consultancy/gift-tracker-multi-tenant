@@ -147,6 +147,23 @@ export async function logViewerEvent(sessionId, viewerId, eventType) {
 
 // Configuration Functions
 export async function getInstanceConfig(instanceId) {
+    // First check if the instance exists
+    const instanceExists = await runQuery(`
+        SELECT id FROM instances WHERE id = $1
+    `, [instanceId]);
+
+    if (instanceExists.length === 0) {
+        // Instance doesn't exist yet, return default config
+        return {
+            overlay_style: 'classic',
+            animation_speed: 'normal',
+            theme: 'dark',
+            custom_colors: {},
+            sound_enabled: false,
+            auto_connect: false
+        };
+    }
+
     const configs = await runQuery(`
         SELECT * FROM instance_configs 
         WHERE instance_id = $1
@@ -190,6 +207,16 @@ export async function updateInstanceConfig(instanceId, config) {
 
 // Gift Groups Functions
 export async function getGiftGroups(instanceId) {
+    // First check if the instance exists
+    const instanceExists = await runQuery(`
+        SELECT id FROM instances WHERE id = $1
+    `, [instanceId]);
+
+    if (instanceExists.length === 0) {
+        // Instance doesn't exist yet, return empty groups
+        return {};
+    }
+
     const groups = await runQuery(`
         SELECT group_id, name, gift_ids, color, goal
         FROM gift_groups 
