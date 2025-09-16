@@ -269,13 +269,19 @@ export async function getContainerLogs(containerName, tail = 100) {
 
 export async function getNextAvailablePort() {
     try {
-        const containers = await docker.listContainers({ all: true });
-        const usedPorts = new Set();
+        // Import database functions
+        const { runQuery } = await import('./database.js');
 
+        // Get used ports from database
+        const usedPortsFromDb = await runQuery('SELECT port FROM instances WHERE port IS NOT NULL');
+        const usedPorts = new Set(usedPortsFromDb.map(row => row.port));
+
+        // Also check Docker containers for additional ports
+        const containers = await docker.listContainers({ all: true });
         containers.forEach(container => {
             if (container.Ports) {
                 container.Ports.forEach(port => {
-                    if (port.PrivatePort === 3000) {
+                    if (port.PrivatePort === 3000 && port.PublicPort) {
                         usedPorts.add(port.PublicPort);
                     }
                 });
@@ -288,6 +294,7 @@ export async function getNextAvailablePort() {
             port++;
         }
 
+        console.log(`Next available port: ${port} (used ports: ${Array.from(usedPorts).join(', ')})`);
         return port;
     } catch (error) {
         console.error('Error getting next available port:', error);

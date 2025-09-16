@@ -110,6 +110,18 @@ router.post('/', async (req, res) => {
         // Get next available port
         const port = await getNextAvailablePort();
 
+        // Double-check that the port is actually available
+        const portCheck = await runQuery(
+            'SELECT id FROM instances WHERE port = $1',
+            [port]
+        );
+
+        if (portCheck.length > 0) {
+            return res.status(409).json({
+                error: `Port ${port} is already in use. Please try again.`
+            });
+        }
+
         // Create instance in database
         const result = await runInsert(`
       INSERT INTO instances (name, tiktok_username, subdomain, password, port, config, data_path)

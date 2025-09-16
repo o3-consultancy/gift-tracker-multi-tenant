@@ -12,8 +12,8 @@ class AdminPanel {
         this.connectSocket();
         this.loadData();
 
-        // Auto-refresh every 30 seconds
-        setInterval(() => this.loadData(), 30000);
+        // Auto-refresh every 60 seconds (reduced frequency to prevent rate limiting)
+        setInterval(() => this.loadData(), 60000);
     }
 
     setupEventListeners() {
