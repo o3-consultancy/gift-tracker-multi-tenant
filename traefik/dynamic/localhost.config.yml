@@ -1,0 +1,34 @@
+# Dynamic Traefik Configuration for Localhost
+# This file will be updated by the admin panel when new instances are created
+
+http:
+  middlewares:
+    # Security headers (relaxed for localhost)
+    security-headers:
+      headers:
+        frameDeny: false
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+    
+    # Rate limiting (relaxed for development)
+    rate-limit:
+      rateLimit:
+        burst: 200
+        average: 100
+
+  routers:
+    # Default catch-all for undefined subdomains
+    default:
+      rule: "HostRegexp(`{subdomain:[a-z0-9-]+}.localhost`)"
+      service: "default-service"
+      middlewares:
+        - security-headers
+        - rate-limit
+
+  services:
+    # Default service for undefined routes
+    default-service:
+      loadBalancer:
+        servers:
+          - url: "http://admin-panel:3000"

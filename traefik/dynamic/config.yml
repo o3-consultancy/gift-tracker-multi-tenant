@@ -1,0 +1,36 @@
+# Dynamic Traefik Configuration
+# This file will be updated by the admin panel when new instances are created
+
+http:
+  middlewares:
+    # Security headers
+    security-headers:
+      headers:
+        frameDeny: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+    
+    # Rate limiting
+    rate-limit:
+      rateLimit:
+        burst: 100
+        average: 50
+
+  routers:
+    # Default catch-all for undefined subdomains
+    default:
+      rule: "HostRegexp(`{subdomain:[a-z0-9-]+}.o3consultancy.ae`)"
+      service: "default-service"
+      middlewares:
+        - security-headers
+        - rate-limit
+
+  services:
+    # Default service for undefined routes
+    default-service:
+      loadBalancer:
+        servers:
+          - url: "http://admin-panel:3000"

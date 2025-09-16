@@ -1,0 +1,8 @@
+{
+  "roses": {
+    "name": "Roses",
+    "giftIds": [5655],
+    "goal": 1000,
+    "color": "#ff0066"
+  }
+}

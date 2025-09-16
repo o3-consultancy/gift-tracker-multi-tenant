@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  # Traefik - DNS Router and Load Balancer
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080" # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+      - ./traefik/certificates:/etc/traefik/certificates
+    networks:
+      - gift-tracker-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.o3consultancy.ae`)"
+      - "traefik.http.routers.traefik.tls=true"
+      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.users=admin:$$2y$$10$$8K1p/a0dL2Lz8bVK5VQhCOYz6Vz8K1p/a0dL2Lz8bVK5VQhCOYz6Vz"
+
+  # Admin Panel - Container Management Interface
+  admin-panel:
+    build: ./admin-panel
+    container_name: admin-panel
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=./data/admin.db
+    volumes:
+      - ./data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - gift-tracker-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.admin.rule=Host(`admin.o3consultancy.ae`)"
+      - "traefik.http.routers.admin.tls=true"
+      - "traefik.http.routers.admin.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.admin.service=admin-panel"
+      - "traefik.http.services.admin-panel.loadbalancer.server.port=3000"
+
+  # Example Gift Tracker Instance (will be dynamically created)
+  gift-tracker-example:
+    build: ./gift-tracker-instance
+    container_name: gift-tracker-example
+    restart: unless-stopped
+    environment:
+      - TIKTOK_USERNAME=example_user
+      - DASH_PASSWORD=example_password
+      - PORT=3000
+    volumes:
+      - ./data/instances/example:/app/data
+    networks:
+      - gift-tracker-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gift-example.rule=Host(`gift-tracker-example.o3consultancy.ae`)"
+      - "traefik.http.routers.gift-example.tls=true"
+      - "traefik.http.routers.gift-example.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.gift-example.service=gift-example"
+      - "traefik.http.services.gift-example.loadbalancer.server.port=3000"
+      - "traefik.http.routers.gift-example.middlewares=auth-basic"
+      - "traefik.http.middlewares.auth-basic.basicauth.users=admin:$$2y$$10$$8K1p/a0dL2Lz8bVK5VQhCOYz6Vz8K1p/a0dL2Lz8bVK5VQhCOYz6Vz"
+
+networks:
+  gift-tracker-network:
+    driver: bridge
+
+volumes:
+  traefik-certificates:
+  gift-tracker-data:

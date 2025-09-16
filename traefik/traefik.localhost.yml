@@ -1,0 +1,37 @@
+# Traefik Configuration for Localhost Development
+api:
+  dashboard: true
+  insecure: false
+
+entryPoints:
+  web:
+    address: ":80"
+    # No HTTPS redirect for localhost development
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: gift-tracker-network
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+# No SSL certificates for localhost development
+# certificatesResolvers:
+#   letsencrypt:
+#     acme:
+#       email: admin@localhost
+#       storage: /etc/traefik/certificates/acme.json
+#       httpChallenge:
+#         entryPoint: web
+
+log:
+  level: INFO
+
+accessLog: {}
+
+# Global settings
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
