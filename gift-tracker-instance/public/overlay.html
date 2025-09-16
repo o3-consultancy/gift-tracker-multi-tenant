@@ -3,14 +3,18 @@
 
 <head>
     <meta charset="utf-8">
-    <title>Gift Overlay - Classic</title>
+    <title>Gift Overlay</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="overlay-styles.css">
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 
 <body style="margin:0;background:transparent;display:flex;justify-content:center;align-items:center;height:100vh">
-    <script src="overlay-enhanced.js"></script>
+    <div class="bar-wrap">
+        <div id="fill" class="fill"></div>
+        <div id="num" class="num">0</div>
+    </div>
+
+    <script src="overlay.js"></script>
 </body>
 
 </html>
