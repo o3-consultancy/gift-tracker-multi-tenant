@@ -137,10 +137,6 @@ router.post('/', async (req, res) => {
             `/app/data/instances/${name}`
         ]);
 
-        if (!result.id) {
-            throw new Error('Failed to create instance in database');
-        }
-
         // Create Docker container
         const container = await createGiftTrackerInstance({
             name,
@@ -345,12 +341,8 @@ router.delete('/:id', async (req, res) => {
             await fs.remove(dataPath);
         }
 
-        // Remove associated records first (to avoid foreign key constraint violations)
+        // Remove associated logs first (to avoid foreign key constraint violation)
         await runUpdate('DELETE FROM logs WHERE instance_id = $1', [id]);
-        await runUpdate('DELETE FROM instance_configs WHERE instance_id = $1', [id]);
-        await runUpdate('DELETE FROM gift_groups WHERE instance_id = $1', [id]);
-        await runUpdate('DELETE FROM goals WHERE instance_id = $1', [id]);
-        await runUpdate('DELETE FROM sessions WHERE instance_id = $1', [id]);
 
         // Remove from database
         await runUpdate('DELETE FROM instances WHERE id = $1', [id]);
