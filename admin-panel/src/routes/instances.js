@@ -340,6 +340,9 @@ router.delete('/:id', async (req, res) => {
             await fs.remove(dataPath);
         }
 
+        // Remove associated logs first (to avoid foreign key constraint violation)
+        await runUpdate('DELETE FROM logs WHERE instance_id = $1', [id]);
+
         // Remove from database
         await runUpdate('DELETE FROM instances WHERE id = $1', [id]);
 
