@@ -24,7 +24,7 @@ services:
       - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
       - "traefik.http.routers.traefik.service=api@internal"
       - "traefik.http.routers.traefik.middlewares=auth-traefik"
-      - "traefik.http.middlewares.auth-traefik.basicauth.users=admin:admin123"
+      - "traefik.http.middlewares.auth-traefik.basicauth.users=admin:$$2y$$10$$8K1p/a0dL2Lz8bVK5VQhCOYz6Vz8K1p/a0dL2Lz8bVK5VQhCOYz6Vz"
 
   # Admin Panel - Container Management Interface
   admin-panel:
@@ -48,7 +48,7 @@ services:
       - "traefik.http.routers.admin.service=admin-panel"
       - "traefik.http.services.admin-panel.loadbalancer.server.port=3000"
       - "traefik.http.routers.admin.middlewares=auth-admin"
-      - "traefik.http.middlewares.auth-admin.basicauth.users=admin:admin123"
+      - "traefik.http.middlewares.auth-admin.basicauth.users=admin:$$2y$$10$$8K1p/a0dL2Lz8bVK5VQhCOYz6Vz8K1p/a0dL2Lz8bVK5VQhCOYz6Vz"
 
   # Example Gift Tracker Instance (will be dynamically created)
   gift-tracker-example:
@@ -71,7 +71,7 @@ services:
       - "traefik.http.routers.gift-example.service=gift-example"
       - "traefik.http.services.gift-example.loadbalancer.server.port=3000"
       - "traefik.http.routers.gift-example.middlewares=auth-example"
-      - "traefik.http.middlewares.auth-example.basicauth.users=admin:example_password"
+      - "traefik.http.middlewares.auth-example.basicauth.users=admin:$$2b$$10$$56dQnEhHkks74XYLWiozMuluHAsbIPMNbrtu9lUHUjA4NzUn8dhSm"
 
 networks:
   gift-tracker-network:
