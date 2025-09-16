@@ -30,6 +30,8 @@ const USERNAME = process.env.TIKTOK_USERNAME;
 const DASH_PASSWORD = process.env.DASH_PASSWORD || 'changeme';
 const INSTANCE_ID = process.env.INSTANCE_ID || 1; // Will be set by admin panel
 
+console.log(`Environment variables: TIKTOK_USERNAME='${USERNAME}', DASH_PASSWORD='${DASH_PASSWORD}', INSTANCE_ID='${INSTANCE_ID}'`);
+
 if (!USERNAME) { console.error('TIKTOK_USERNAME missing'); process.exit(1); }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -224,22 +226,27 @@ const authenticateInstance = async (req, res, next) => {
   const credentials = Buffer.from(auth.slice(6), 'base64').toString();
   const [username, password] = credentials.split(':');
 
+  // Simple password authentication using DASH_PASSWORD
+  console.log(`Authentication attempt: username='${username}', password='${password}', expected='${DASH_PASSWORD}'`);
+  if (username === 'admin' && password === DASH_PASSWORD) {
+    console.log('Simple authentication successful');
+    req.user = { username: 'admin', role: 'admin' };
+    return next();
+  }
+
+  // If simple auth fails, try database authentication as fallback
   try {
     const user = await authenticateUser(username, password);
-
-    if (!user) {
-      res.setHeader('WWW-Authenticate', 'Basic realm="Gift Tracker Instance"');
-      return res.status(401).json({ error: 'Invalid credentials' });
+    if (user) {
+      req.user = user;
+      return next();
     }
-
-    // Add user info to request
-    req.user = user;
-    return next();
   } catch (error) {
-    console.error('Authentication error:', error);
-    res.setHeader('WWW-Authenticate', 'Basic realm="Gift Tracker Instance"');
-    return res.status(500).json({ error: 'Authentication service error' });
+    console.error('Database authentication error:', error);
   }
+
+  res.setHeader('WWW-Authenticate', 'Basic realm="Gift Tracker Instance"');
+  return res.status(401).json({ error: 'Invalid credentials' });
 };
 
 // Apply authentication to all routes except overlay

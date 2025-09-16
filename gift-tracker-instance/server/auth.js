@@ -24,12 +24,26 @@ export async function authenticateUser(username, password) {
     }
 
     try {
-        const result = await pool.query(
+        // First, try to find the user by username
+        let result = await pool.query(
             'SELECT id, username, password_hash, role, is_active FROM users WHERE username = $1 AND is_active = true',
             [username]
         );
 
+        // If no user found and username is 'admin', try to find the instance-specific user
+        if (result.rows.length === 0 && username === 'admin') {
+            // Get the instance name from environment variable
+            const instanceName = process.env.INSTANCE_NAME || process.env.TIKTOK_USERNAME;
+            if (instanceName) {
+                result = await pool.query(
+                    'SELECT id, username, password_hash, role, is_active FROM users WHERE username = $1 AND is_active = true',
+                    [instanceName]
+                );
+            }
+        }
+
         if (result.rows.length === 0) {
+            console.log(`Authentication failed: User '${username}' not found`);
             return null;
         }
 
@@ -37,9 +51,11 @@ export async function authenticateUser(username, password) {
         const isValidPassword = await bcrypt.compare(password, user.password_hash);
 
         if (!isValidPassword) {
+            console.log(`Authentication failed: Invalid password for user '${username}'`);
             return null;
         }
 
+        console.log(`Authentication successful for user '${user.username}'`);
         return {
             id: user.id,
             username: user.username,
