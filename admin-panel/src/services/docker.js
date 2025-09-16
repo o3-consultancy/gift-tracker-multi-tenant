@@ -88,7 +88,7 @@ export async function createGiftTrackerInstance(instanceData) {
             },
             Labels: {
                 'traefik.enable': 'true',
-                [`traefik.http.routers.gift-${name}.rule`]: `Host(\`${subdomain}.${process.env.NODE_ENV === 'development' ? 'localhost' : 'o3consultancy.ae'}\`)`,
+                [`traefik.http.routers.gift-${name}.rule`]: `Host(\`${subdomain}.${process.env.NODE_ENV === 'development' ? 'localhost' : 'o3-ttgifts.com'}\`)`,
                 ...(process.env.NODE_ENV !== 'development' ? {
                     [`traefik.http.routers.gift-${name}.tls`]: 'true',
                     [`traefik.http.routers.gift-${name}.tls.certresolver`]: 'letsencrypt',

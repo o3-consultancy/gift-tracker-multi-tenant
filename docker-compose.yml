@@ -19,7 +19,7 @@ services:
       - gift-tracker-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.o3consultancy.ae`)"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.o3-ttgifts.com`)"
       - "traefik.http.routers.traefik.tls=true"
       - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
       - "traefik.http.routers.traefik.service=api@internal"
@@ -42,7 +42,7 @@ services:
       - gift-tracker-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.admin.rule=Host(`admin.o3consultancy.ae`)"
+      - "traefik.http.routers.admin.rule=Host(`admin.o3-ttgifts.com`)"
       - "traefik.http.routers.admin.tls=true"
       - "traefik.http.routers.admin.tls.certresolver=letsencrypt"
       - "traefik.http.routers.admin.service=admin-panel"
@@ -63,7 +63,7 @@ services:
       - gift-tracker-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.gift-example.rule=Host(`gift-tracker-example.o3consultancy.ae`)"
+      - "traefik.http.routers.gift-example.rule=Host(`gift-tracker-example.o3-ttgifts.com`)"
       - "traefik.http.routers.gift-example.tls=true"
       - "traefik.http.routers.gift-example.tls.certresolver=letsencrypt"
       - "traefik.http.routers.gift-example.service=gift-example"

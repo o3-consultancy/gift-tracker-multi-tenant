@@ -154,7 +154,7 @@ class AdminPanel {
             <td class="px-6 py-4 whitespace-nowrap">
                 <a href="${instance.url}" target="_blank" 
                    class="text-blue-600 hover:text-blue-800 text-sm">
-                    ${instance.subdomain}.${window.location.hostname.includes('localhost') ? 'localhost' : 'o3consultancy.ae'}
+                    ${instance.subdomain}.${window.location.hostname.includes('localhost') ? 'localhost' : 'o3-ttgifts.com'}
                     <i class="fas fa-external-link-alt ml-1"></i>
                 </a>
             </td>

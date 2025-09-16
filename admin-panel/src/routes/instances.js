@@ -44,7 +44,7 @@ router.get('/', async (req, res) => {
                 return {
                     ...instance,
                     container: containerStatus,
-                    url: `http://${instance.subdomain}.${process.env.NODE_ENV === 'development' ? 'localhost' : 'o3consultancy.ae'}`
+                    url: `http://${instance.subdomain}.${process.env.NODE_ENV === 'development' ? 'localhost' : 'o3-ttgifts.com'}`
                 };
             })
         );
@@ -75,7 +75,7 @@ router.get('/:id', async (req, res) => {
         res.json({
             ...instance[0],
             container: containerStatus,
-            url: `http://${instance[0].subdomain}.${process.env.NODE_ENV === 'development' ? 'localhost' : 'o3consultancy.ae'}`
+            url: `http://${instance[0].subdomain}.${process.env.NODE_ENV === 'development' ? 'localhost' : 'o3-ttgifts.com'}`
         });
     } catch (error) {
         console.error('Error fetching instance:', error);
@@ -153,7 +153,7 @@ router.post('/', async (req, res) => {
             subdomain,
             port,
             status: 'running',
-            url: `http://${subdomain}.${process.env.NODE_ENV === 'development' ? 'localhost' : 'o3consultancy.ae'}`,
+            url: `http://${subdomain}.${process.env.NODE_ENV === 'development' ? 'localhost' : 'o3-ttgifts.com'}`,
             container
         });
 
