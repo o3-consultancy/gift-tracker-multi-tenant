@@ -7,12 +7,13 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs-extra';
-import bcrypt from 'bcrypt';
 
 import { initializeDatabase } from './services/database.js';
+import { initializeAuth, authenticateUser } from './services/auth.js';
 import { initializeDocker } from './services/docker.js';
 import instanceRoutes from './routes/instances.js';
 import adminRoutes from './routes/admin.js';
+import userRoutes from './routes/users.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
@@ -55,7 +56,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Authentication middleware
-const authenticateAdmin = (req, res, next) => {
+const authenticateAdmin = async (req, res, next) => {
     const auth = req.headers.authorization;
 
     if (!auth || !auth.startsWith('Basic ')) {
@@ -66,13 +67,28 @@ const authenticateAdmin = (req, res, next) => {
     const credentials = Buffer.from(auth.slice(6), 'base64').toString();
     const [username, password] = credentials.split(':');
 
-    // Check credentials (admin/admin123)
-    if (username === 'admin' && password === 'admin123') {
-        return next();
-    }
+    try {
+        const user = await authenticateUser(username, password);
 
-    res.setHeader('WWW-Authenticate', 'Basic realm="Admin Panel"');
-    return res.status(401).json({ error: 'Invalid credentials' });
+        if (!user) {
+            res.setHeader('WWW-Authenticate', 'Basic realm="Admin Panel"');
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // Check if user has admin role
+        if (user.role !== 'admin') {
+            res.setHeader('WWW-Authenticate', 'Basic realm="Admin Panel"');
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        // Add user info to request
+        req.user = user;
+        return next();
+    } catch (error) {
+        console.error('Authentication error:', error);
+        res.setHeader('WWW-Authenticate', 'Basic realm="Admin Panel"');
+        return res.status(500).json({ error: 'Authentication service error' });
+    }
 };
 
 // Static files
@@ -81,6 +97,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // API Routes with authentication
 app.use('/api/instances', authenticateAdmin, instanceRoutes);
 app.use('/api/admin', authenticateAdmin, adminRoutes);
+app.use('/api/users', authenticateAdmin, userRoutes);
 
 // Serve admin panel with authentication
 app.get('/', authenticateAdmin, (req, res) => {
@@ -131,6 +148,10 @@ async function startServer() {
         // Initialize database
         await initializeDatabase();
         console.log('✅ Database initialized');
+
+        // Initialize authentication service
+        await initializeAuth();
+        console.log('✅ Authentication service initialized');
 
         // Initialize Docker connection
         await initializeDocker();

@@ -1,139 +1,50 @@
-import sqlite3 from 'sqlite3';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs-extra';
+import { Pool } from 'pg';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.join(__dirname, '../../data/admin.db');
+// Database connection pool
+let pool = null;
 
-let db = null;
-
-export async function initializeDatabase() {
+export function initializeDatabase() {
     return new Promise((resolve, reject) => {
-        // Ensure data directory exists
-        fs.ensureDirSync(path.dirname(DB_PATH));
-
-        db = new sqlite3.Database(DB_PATH, (err) => {
-            if (err) {
-                console.error('Error opening database:', err);
-                reject(err);
-                return;
-            }
-
-            console.log('Connected to SQLite database');
-            createTables().then(resolve).catch(reject);
-        });
-    });
-}
-
-function createTables() {
-    return new Promise((resolve, reject) => {
-        const createInstancesTable = `
-      CREATE TABLE IF NOT EXISTS instances (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE NOT NULL,
-        tiktok_username TEXT NOT NULL,
-        subdomain TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        port INTEGER UNIQUE NOT NULL,
-        status TEXT DEFAULT 'stopped',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        config TEXT DEFAULT '{}',
-        data_path TEXT NOT NULL
-      )
-    `;
-
-        const createLogsTable = `
-      CREATE TABLE IF NOT EXISTS logs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        instance_id INTEGER,
-        level TEXT NOT NULL,
-        message TEXT NOT NULL,
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (instance_id) REFERENCES instances (id)
-      )
-    `;
-
-        const createSettingsTable = `
-      CREATE TABLE IF NOT EXISTS settings (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `;
-
-        db.serialize(() => {
-            db.run(createInstancesTable, (err) => {
-                if (err) {
-                    console.error('Error creating instances table:', err);
-                    reject(err);
-                    return;
-                }
+        try {
+            pool = new Pool({
+                host: process.env.DB_HOST || 'localhost',
+                port: process.env.DB_PORT || 5432,
+                database: process.env.DB_NAME || 'gift_tracker',
+                user: process.env.DB_USER || 'admin',
+                password: process.env.DB_PASSWORD || 'admin123',
+                max: 20,
+                idleTimeoutMillis: 30000,
+                connectionTimeoutMillis: 2000,
             });
 
-            db.run(createLogsTable, (err) => {
+            // Test the connection
+            pool.query('SELECT NOW()', (err, result) => {
                 if (err) {
-                    console.error('Error creating logs table:', err);
-                    reject(err);
-                    return;
-                }
-            });
-
-            db.run(createSettingsTable, (err) => {
-                if (err) {
-                    console.error('Error creating settings table:', err);
-                    reject(err);
-                    return;
-                }
-
-                // Insert default settings
-                insertDefaultSettings().then(resolve).catch(reject);
-            });
-        });
-    });
-}
-
-function insertDefaultSettings() {
-    return new Promise((resolve, reject) => {
-        const defaultSettings = [
-            ['domain', 'o3consultancy.ae'],
-            ['base_port', '3001'],
-            ['max_instances', '50'],
-            ['auto_ssl', 'true'],
-            ['backup_enabled', 'true'],
-            ['backup_interval', '24']
-        ];
-
-        const stmt = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
-
-        db.serialize(() => {
-            defaultSettings.forEach(([key, value]) => {
-                stmt.run(key, value);
-            });
-
-            stmt.finalize((err) => {
-                if (err) {
+                    console.error('Error connecting to PostgreSQL:', err);
                     reject(err);
                 } else {
-                    resolve();
+                    console.log('Connected to PostgreSQL database');
+                    resolve(pool);
                 }
             });
-        });
+        } catch (error) {
+            console.error('Failed to initialize PostgreSQL:', error);
+            reject(error);
+        }
     });
 }
 
 export function getDatabase() {
-    return db;
+    return pool;
 }
 
 export function runQuery(sql, params = []) {
     return new Promise((resolve, reject) => {
-        db.all(sql, params, (err, rows) => {
+        pool.query(sql, params, (err, result) => {
             if (err) {
                 reject(err);
             } else {
-                resolve(rows);
+                resolve(result.rows);
             }
         });
     });
@@ -141,11 +52,14 @@ export function runQuery(sql, params = []) {
 
 export function runInsert(sql, params = []) {
     return new Promise((resolve, reject) => {
-        db.run(sql, params, function (err) {
+        pool.query(sql, params, (err, result) => {
             if (err) {
                 reject(err);
             } else {
-                resolve({ id: this.lastID, changes: this.changes });
+                resolve({
+                    id: result.rows[0]?.id || result.insertId,
+                    changes: result.rowCount
+                });
             }
         });
     });
@@ -153,11 +67,11 @@ export function runInsert(sql, params = []) {
 
 export function runUpdate(sql, params = []) {
     return new Promise((resolve, reject) => {
-        db.run(sql, params, function (err) {
+        pool.query(sql, params, (err, result) => {
             if (err) {
                 reject(err);
             } else {
-                resolve({ changes: this.changes });
+                resolve({ changes: result.rowCount });
             }
         });
     });
@@ -165,12 +79,12 @@ export function runUpdate(sql, params = []) {
 
 export function closeDatabase() {
     return new Promise((resolve) => {
-        if (db) {
-            db.close((err) => {
+        if (pool) {
+            pool.end((err) => {
                 if (err) {
-                    console.error('Error closing database:', err);
+                    console.error('Error closing PostgreSQL connection:', err);
                 } else {
-                    console.log('Database connection closed');
+                    console.log('PostgreSQL connection closed');
                 }
                 resolve();
             });

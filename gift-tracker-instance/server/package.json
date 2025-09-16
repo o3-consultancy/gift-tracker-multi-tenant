@@ -8,6 +8,8 @@
     "tiktok-live-connector": "^2",
     "express-basic-auth": "^1.2.1",
     "fs-extra": "^11.2.0",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "pg": "^8.11.3",
+    "bcrypt": "^5.1.1"
   }
 }

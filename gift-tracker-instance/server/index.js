@@ -1,5 +1,4 @@
 import express from 'express';
-import basicAuth from 'express-basic-auth';
 import cors from 'cors';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
@@ -7,6 +6,7 @@ import { WebcastPushConnection } from 'tiktok-live-connector';
 import fs from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { initializeAuth, authenticateUser, closeAuth } from './auth.js';
 
 /* ── env ───────────────────────────── */
 const PORT = process.env.PORT || 3000;
@@ -142,7 +142,43 @@ app.use('/overlay.html', express.static(path.join(pub, 'overlay.html')));
 app.use('/overlay.js', express.static(path.join(pub, 'overlay.js')));
 app.use('/styles.css', express.static(path.join(pub, 'styles.css')));
 
-app.use(basicAuth({ users: { admin: DASH_PASSWORD }, challenge: true }));
+// Custom SQL-based authentication middleware
+const authenticateInstance = async (req, res, next) => {
+  const auth = req.headers.authorization;
+
+  if (!auth || !auth.startsWith('Basic ')) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Gift Tracker Instance"');
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  const credentials = Buffer.from(auth.slice(6), 'base64').toString();
+  const [username, password] = credentials.split(':');
+
+  try {
+    const user = await authenticateUser(username, password);
+
+    if (!user) {
+      res.setHeader('WWW-Authenticate', 'Basic realm="Gift Tracker Instance"');
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Add user info to request
+    req.user = user;
+    return next();
+  } catch (error) {
+    console.error('Authentication error:', error);
+    res.setHeader('WWW-Authenticate', 'Basic realm="Gift Tracker Instance"');
+    return res.status(500).json({ error: 'Authentication service error' });
+  }
+};
+
+// Apply authentication to all routes except overlay
+app.use('/overlay.html', express.static(path.join(pub, 'overlay.html')));
+app.use('/overlay.js', express.static(path.join(pub, 'overlay.js')));
+app.use('/styles.css', express.static(path.join(pub, 'styles.css')));
+
+// Protected routes
+app.use(authenticateInstance);
 app.use(express.static(pub));
 app.get('/', (_, res) => res.sendFile(path.join(pub, 'index.html')));
 
@@ -214,5 +250,37 @@ function buildPayload() {
 function broadcast() { io.emit('update', buildPayload()); }
 
 /* ── start server ─────────────────────────────────────────────────── */
-http.listen(PORT, () =>
-  console.log(`Dashboard → http://localhost:${PORT}  (admin / ${DASH_PASSWORD})`));
+async function startServer() {
+  try {
+    // Initialize authentication service
+    await initializeAuth();
+    console.log('✅ Authentication service initialized');
+
+    // Start server
+    http.listen(PORT, () => {
+      console.log(`🚀 Gift Tracker Instance running on port ${PORT}`);
+      console.log(`📊 Dashboard: http://localhost:${PORT}`);
+      console.log(`🔐 Authentication: SQL-based (PostgreSQL)`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('\n🛑 Shutting down gracefully...');
+  await disconnectTikTok();
+  await closeAuth();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('\n🛑 Shutting down gracefully...');
+  await disconnectTikTok();
+  await closeAuth();
+  process.exit(0);
+});
+
+startServer();
