@@ -67,6 +67,7 @@ export async function createGiftTrackerInstance(instanceData) {
             Env: [
                 `TIKTOK_USERNAME=${tiktokUsername}`,
                 `DASH_PASSWORD=${password}`,
+                `INSTANCE_ID=${result.id}`,
                 'PORT=3000',
                 'DB_HOST=postgres',
                 'DB_PORT=5432',
