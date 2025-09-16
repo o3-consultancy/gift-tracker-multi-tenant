@@ -7,38 +7,24 @@ import fs from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { initializeAuth, authenticateUser, closeAuth } from './auth.js';
-import {
-  initializeDatabase,
-  closeDatabase,
-  createSession,
-  endSession,
-  getActiveSession,
-  logGiftEvent,
-  logViewerEvent,
-  getInstanceConfig,
-  updateInstanceConfig,
-  getGiftGroups,
-  saveGiftGroups,
-  getSessionHistory,
-  getSessionStats,
-  getGiftAnalytics
-} from './database.js';
 
 /* ── env ───────────────────────────── */
 const PORT = process.env.PORT || 3000;
 const USERNAME = process.env.TIKTOK_USERNAME;
 const DASH_PASSWORD = process.env.DASH_PASSWORD || 'changeme';
-const INSTANCE_ID = process.env.INSTANCE_ID || 1; // Will be set by admin panel
 
 if (!USERNAME) { console.error('TIKTOK_USERNAME missing'); process.exit(1); }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /* ── config & saved state ──────────── */
-let cfg = { target: 10_000 };
-let groups = {};
-let instanceConfig = {};
-let currentSession = null;
+const cfgPath = path.resolve('config/config.json');
+await fs.ensureFile(cfgPath);
+let cfg = await fs.readJson(cfgPath).catch(() => ({ target: 10_000 }));
+
+const groupsPath = path.resolve('config/groups.json');
+await fs.ensureFile(groupsPath);
+let groups = await fs.readJson(groupsPath).catch(() => ({}));
 
 /* ── runtime state ─────────────────── */
 let counters = {};
@@ -53,27 +39,7 @@ function initCounters() {
   counters = {};
   for (const g in groups) counters[g] = { count: 0, diamonds: 0 };
 }
-
-// Load configuration and groups from database
-async function loadInstanceData() {
-  try {
-    // Load instance configuration
-    instanceConfig = await getInstanceConfig(INSTANCE_ID);
-    cfg.target = instanceConfig.target || 10_000;
-
-    // Load gift groups
-    groups = await getGiftGroups(INSTANCE_ID);
-
-    // Initialize counters
-    initCounters();
-
-    console.log('✅ Instance data loaded from database');
-  } catch (error) {
-    console.error('❌ Failed to load instance data:', error);
-    // Fallback to default values
-    initCounters();
-  }
-}
+initCounters();
 
 /* ── TikTok connector (created on demand) ─────────────────────────── */
 let tiktok = null;
@@ -83,10 +49,6 @@ async function connectTikTok() {
 
   liveStatus = 'CONNECTING'; broadcast();
   try {
-    // Create new session
-    currentSession = await createSession(INSTANCE_ID);
-    console.log(`📊 Started new session: ${currentSession}`);
-
     tiktok = new WebcastPushConnection(USERNAME, {
       enableExtendedGiftInfo: true,
       signServerUrl: 'https://sign.furetto.dev/api/sign'
@@ -94,7 +56,7 @@ async function connectTikTok() {
 
     /* … listeners (streamEnd, viewer, member) stay the same … */
 
-    tiktok.on('gift', async (data) => {
+    tiktok.on('gift', data => {
       io.emit('giftStream', data);       // still echo raw event to the UI
 
       /* 1️⃣  Calculate how many gifts to add (delta) */
@@ -115,21 +77,6 @@ async function connectTikTok() {
       totalGifts += delta;
       totalDiamonds += data.diamondCount * delta;
 
-      /* 3️⃣  Log gift event to database */
-      if (currentSession) {
-        try {
-          await logGiftEvent(currentSession, {
-            giftId: data.giftId,
-            giftName: data.giftName,
-            diamondCount: data.diamondCount,
-            nickname: data.nickname,
-            repeatCount: delta
-          });
-        } catch (error) {
-          console.error('Failed to log gift event:', error);
-        }
-      }
-
       /* add unseen gift to catalog */
       if (!giftCatalog.find(g => g.id === data.giftId)) {
         giftCatalog.push({
@@ -141,7 +88,7 @@ async function connectTikTok() {
         io.emit('giftCatalog', giftCatalog);      // update all clients
       }
 
-      /* 4️⃣  Per-group totals */
+      /* 3️⃣  Per-group totals */
       const gid = Object.keys(groups).find(k =>
         (groups[k].giftIds || []).includes(data.giftId)
       );
@@ -150,7 +97,7 @@ async function connectTikTok() {
         counters[gid].diamonds += data.diamondCount * delta;
       }
 
-      /* 5️⃣  Broadcast updated payload */
+      /* 4️⃣  Broadcast updated payload */
       broadcast();
     });
 
@@ -178,23 +125,6 @@ async function disconnectTikTok() {
     try { await tiktok.disconnect(); } catch { }
     tiktok = null;
   }
-
-  // End current session
-  if (currentSession) {
-    try {
-      await endSession(currentSession, {
-        totalGifts,
-        totalDiamonds,
-        peakViewers: viewers,
-        uniqueViewers: uniques.size
-      });
-      console.log(`📊 Ended session: ${currentSession}`);
-    } catch (error) {
-      console.error('Failed to end session:', error);
-    }
-    currentSession = null;
-  }
-
   liveStatus = 'DISCONNECTED';
   broadcast();
 }
@@ -259,16 +189,11 @@ app.post('/api/disconnect', async (_, res) => { await disconnectTikTok(); res.js
 app.get('/api/state', (_, res) => res.json(buildPayload()));
 
 app.post('/api/groups', async (req, res) => {
-  try {
-    groups = req.body || {};
-    await saveGiftGroups(INSTANCE_ID, groups);
-    initCounters();
-    broadcast();
-    res.json({ ok: true });
-  } catch (error) {
-    console.error('Failed to save groups:', error);
-    res.status(500).json({ error: 'Failed to save groups' });
-  }
+  groups = req.body || {};
+  await fs.writeJson(groupsPath, groups, { spaces: 2 });
+  initCounters();
+  broadcast();
+  res.json({ ok: true });
 });
 
 
@@ -285,15 +210,10 @@ app.post('/api/counter', (req, res) => {
 });
 
 app.post('/api/target', async (req, res) => {
-  try {
-    cfg.target = Number(req.body?.target) || cfg.target;
-    await updateInstanceConfig(INSTANCE_ID, { ...instanceConfig, target: cfg.target });
-    broadcast();
-    res.json({ ok: true });
-  } catch (error) {
-    console.error('Failed to update target:', error);
-    res.status(500).json({ error: 'Failed to update target' });
-  }
+  cfg.target = Number(req.body?.target) || cfg.target;
+  await fs.writeJson(cfgPath, cfg, { spaces: 2 });
+  broadcast();
+  res.json({ ok: true });
 });
 
 app.post('/api/reset', (_, res) => {
@@ -303,61 +223,6 @@ app.post('/api/reset', (_, res) => {
   totalGifts = totalDiamonds = 0;
   broadcast();
   res.json({ ok: true });
-});
-
-// New Analytics API endpoints
-app.get('/api/analytics/sessions', async (req, res) => {
-  try {
-    const { limit = 10 } = req.query;
-    const sessions = await getSessionHistory(INSTANCE_ID, parseInt(limit));
-    res.json(sessions);
-  } catch (error) {
-    console.error('Failed to get session history:', error);
-    res.status(500).json({ error: 'Failed to get session history' });
-  }
-});
-
-app.get('/api/analytics/stats', async (req, res) => {
-  try {
-    const stats = await getSessionStats(INSTANCE_ID);
-    res.json(stats);
-  } catch (error) {
-    console.error('Failed to get session stats:', error);
-    res.status(500).json({ error: 'Failed to get session stats' });
-  }
-});
-
-app.get('/api/analytics/gifts', async (req, res) => {
-  try {
-    const { sessionId } = req.query;
-    const analytics = await getGiftAnalytics(INSTANCE_ID, sessionId);
-    res.json(analytics);
-  } catch (error) {
-    console.error('Failed to get gift analytics:', error);
-    res.status(500).json({ error: 'Failed to get gift analytics' });
-  }
-});
-
-// Configuration API endpoints
-app.get('/api/config', async (req, res) => {
-  try {
-    const config = await getInstanceConfig(INSTANCE_ID);
-    res.json(config);
-  } catch (error) {
-    console.error('Failed to get instance config:', error);
-    res.status(500).json({ error: 'Failed to get instance config' });
-  }
-});
-
-app.put('/api/config', async (req, res) => {
-  try {
-    await updateInstanceConfig(INSTANCE_ID, req.body);
-    instanceConfig = await getInstanceConfig(INSTANCE_ID);
-    res.json({ ok: true });
-  } catch (error) {
-    console.error('Failed to update instance config:', error);
-    res.status(500).json({ error: 'Failed to update instance config' });
-  }
 });
 
 /* ── Socket.IO initial emit ───────────────────────────────────────── */
@@ -387,23 +252,15 @@ function broadcast() { io.emit('update', buildPayload()); }
 /* ── start server ─────────────────────────────────────────────────── */
 async function startServer() {
   try {
-    // Initialize database
-    await initializeDatabase();
-    console.log('✅ Database initialized');
-
     // Initialize authentication service
     await initializeAuth();
     console.log('✅ Authentication service initialized');
-
-    // Load instance data from database
-    await loadInstanceData();
 
     // Start server
     http.listen(PORT, () => {
       console.log(`🚀 Gift Tracker Instance running on port ${PORT}`);
       console.log(`📊 Dashboard: http://localhost:${PORT}`);
       console.log(`🔐 Authentication: SQL-based (PostgreSQL)`);
-      console.log(`📈 Analytics: Enabled with session tracking`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
@@ -416,7 +273,6 @@ process.on('SIGINT', async () => {
   console.log('\n🛑 Shutting down gracefully...');
   await disconnectTikTok();
   await closeAuth();
-  await closeDatabase();
   process.exit(0);
 });
 
@@ -424,7 +280,6 @@ process.on('SIGTERM', async () => {
   console.log('\n🛑 Shutting down gracefully...');
   await disconnectTikTok();
   await closeAuth();
-  await closeDatabase();
   process.exit(0);
 });
 
