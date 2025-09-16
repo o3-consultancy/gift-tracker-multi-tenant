@@ -1,0 +1,568 @@
+/* ========================================
+   GIFT TRACKER OVERLAY STYLES
+   Multiple Layout Options for Streamers
+   ======================================== */
+
+/* Base Variables */
+:root {
+    --primary-color: #ff6b6b;
+    --secondary-color: #4ecdc4;
+    --accent-color: #45b7d1;
+    --text-color: #ffffff;
+    --background-color: rgba(0, 0, 0, 0.8);
+    --border-radius: 12px;
+    --transition-speed: 0.3s;
+    --glow-intensity: 20px;
+}
+
+/* ========================================
+   STYLE 1: CLASSIC PROGRESS BAR (Current)
+   ======================================== */
+.overlay-classic {
+    position: relative;
+    width: 300px;
+    height: 60px;
+    background: var(--background-color);
+    border-radius: var(--border-radius);
+    border: 2px solid var(--primary-color);
+    overflow: hidden;
+    box-shadow: 0 0 var(--glow-intensity) var(--primary-color);
+}
+
+.overlay-classic .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    transition: width var(--transition-speed) ease;
+    position: relative;
+}
+
+.overlay-classic .progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--text-color);
+    font-weight: bold;
+    font-size: 18px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    z-index: 10;
+}
+
+/* ========================================
+   STYLE 2: CIRCULAR PROGRESS RING
+   ======================================== */
+.overlay-circular {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    background: var(--background-color);
+    border-radius: 50%;
+    border: 3px solid var(--primary-color);
+    box-shadow: 0 0 var(--glow-intensity) var(--primary-color);
+}
+
+.overlay-circular .progress-ring {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.overlay-circular .progress-ring-circle {
+    fill: none;
+    stroke: var(--primary-color);
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 314;
+    stroke-dashoffset: 314;
+    transition: stroke-dashoffset var(--transition-speed) ease;
+    filter: drop-shadow(0 0 10px var(--primary-color));
+}
+
+.overlay-circular .progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--text-color);
+    font-weight: bold;
+    font-size: 16px;
+    text-align: center;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* ========================================
+   STYLE 3: DASHBOARD STYLE
+   ======================================== */
+.overlay-dashboard {
+    position: relative;
+    width: 280px;
+    height: 80px;
+    background: var(--background-color);
+    border-radius: var(--border-radius);
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 0 var(--glow-intensity) var(--primary-color);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.overlay-dashboard .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.overlay-dashboard .dashboard-title {
+    color: var(--text-color);
+    font-size: 14px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.overlay-dashboard .dashboard-percentage {
+    color: var(--secondary-color);
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.overlay-dashboard .dashboard-progress {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.overlay-dashboard .dashboard-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    transition: width var(--transition-speed) ease;
+    border-radius: 4px;
+}
+
+.overlay-dashboard .dashboard-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.overlay-dashboard .dashboard-current {
+    color: var(--text-color);
+    font-size: 18px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.overlay-dashboard .dashboard-target {
+    color: var(--text-color);
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+/* ========================================
+   STYLE 4: FLOATING BUBBLES
+   ======================================== */
+.overlay-bubbles {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+}
+
+.overlay-bubbles .bubble {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--background-color);
+    border: 2px solid var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-color);
+    font-weight: bold;
+    font-size: 12px;
+    box-shadow: 0 0 15px var(--primary-color);
+    transition: all var(--transition-speed) ease;
+    animation: bubbleFloat 3s ease-in-out infinite;
+}
+
+.overlay-bubbles .bubble.active {
+    background: var(--primary-color);
+    transform: scale(1.2);
+    box-shadow: 0 0 25px var(--primary-color);
+}
+
+.overlay-bubbles .bubble:nth-child(odd) {
+    animation-delay: 0.5s;
+}
+
+.overlay-bubbles .bubble:nth-child(even) {
+    animation-delay: 1s;
+}
+
+@keyframes bubbleFloat {
+
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* ========================================
+   STYLE 5: MINIMALIST TEXT
+   ======================================== */
+.overlay-minimalist {
+    position: relative;
+    background: transparent;
+    padding: 20px;
+    text-align: center;
+}
+
+.overlay-minimalist .minimalist-current {
+    color: var(--text-color);
+    font-size: 48px;
+    font-weight: bold;
+    text-shadow: 0 0 20px var(--primary-color);
+    margin-bottom: 8px;
+    transition: all var(--transition-speed) ease;
+}
+
+.overlay-minimalist .minimalist-separator {
+    color: var(--primary-color);
+    font-size: 24px;
+    margin: 0 10px;
+}
+
+.overlay-minimalist .minimalist-target {
+    color: var(--text-color);
+    font-size: 24px;
+    opacity: 0.7;
+    text-shadow: 0 0 10px var(--primary-color);
+}
+
+.overlay-minimalist .minimalist-progress {
+    margin-top: 15px;
+    width: 200px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.overlay-minimalist .minimalist-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    transition: width var(--transition-speed) ease;
+    border-radius: 2px;
+}
+
+/* ========================================
+   STYLE 6: GIFT SHOWCASE
+   ======================================== */
+.overlay-showcase {
+    position: relative;
+    width: 320px;
+    height: 100px;
+    background: var(--background-color);
+    border-radius: var(--border-radius);
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 0 var(--glow-intensity) var(--primary-color);
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.overlay-showcase .showcase-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: var(--text-color);
+    box-shadow: 0 0 20px var(--primary-color);
+    animation: iconPulse 2s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.overlay-showcase .showcase-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.overlay-showcase .showcase-title {
+    color: var(--text-color);
+    font-size: 16px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.overlay-showcase .showcase-progress {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.overlay-showcase .showcase-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    transition: width var(--transition-speed) ease;
+    border-radius: 3px;
+}
+
+.overlay-showcase .showcase-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.overlay-showcase .showcase-current {
+    color: var(--text-color);
+    font-size: 20px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.overlay-showcase .showcase-percentage {
+    color: var(--secondary-color);
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* ========================================
+   ANIMATION EFFECTS
+   ======================================== */
+
+/* Flash Animation */
+@keyframes flash {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.3;
+    }
+}
+
+.flash {
+    animation: flash 0.3s ease-in-out;
+}
+
+/* Glow Animation */
+@keyframes glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 var(--glow-intensity) var(--primary-color);
+        filter: brightness(1);
+    }
+
+    50% {
+        box-shadow: 0 0 calc(var(--glow-intensity) * 1.5) var(--primary-color);
+        filter: brightness(1.2);
+    }
+}
+
+.glow {
+    animation: glow 2s ease-in-out infinite;
+}
+
+/* Bounce Animation */
+@keyframes bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.bounce {
+    animation: bounce 0.6s ease-in-out;
+}
+
+/* Shake Animation */
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-5px);
+    }
+
+    75% {
+        transform: translateX(5px);
+    }
+}
+
+.shake {
+    animation: shake 0.5s ease-in-out;
+}
+
+/* Particle Effects */
+.particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: particleFloat 2s ease-out forwards;
+}
+
+@keyframes particleFloat {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-100px) scale(0);
+    }
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+@media (max-width: 768px) {
+    .overlay-classic {
+        width: 250px;
+        height: 50px;
+    }
+
+    .overlay-classic .progress-text {
+        font-size: 16px;
+    }
+
+    .overlay-circular {
+        width: 100px;
+        height: 100px;
+    }
+
+    .overlay-circular .progress-text {
+        font-size: 14px;
+    }
+
+    .overlay-dashboard {
+        width: 240px;
+        height: 70px;
+        padding: 10px;
+    }
+
+    .overlay-dashboard .dashboard-current {
+        font-size: 16px;
+    }
+
+    .overlay-bubbles {
+        width: 160px;
+        height: 160px;
+    }
+
+    .overlay-bubbles .bubble {
+        width: 32px;
+        height: 32px;
+        font-size: 10px;
+    }
+
+    .overlay-minimalist .minimalist-current {
+        font-size: 36px;
+    }
+
+    .overlay-showcase {
+        width: 280px;
+        height: 80px;
+        padding: 12px;
+    }
+
+    .overlay-showcase .showcase-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+}
+
+/* ========================================
+   THEME VARIATIONS
+   ======================================== */
+
+/* Dark Theme */
+.theme-dark {
+    --primary-color: #ff6b6b;
+    --secondary-color: #4ecdc4;
+    --accent-color: #45b7d1;
+    --text-color: #ffffff;
+    --background-color: rgba(0, 0, 0, 0.8);
+}
+
+/* Light Theme */
+.theme-light {
+    --primary-color: #e74c3c;
+    --secondary-color: #3498db;
+    --accent-color: #2ecc71;
+    --text-color: #2c3e50;
+    --background-color: rgba(255, 255, 255, 0.9);
+}
+
+/* Neon Theme */
+.theme-neon {
+    --primary-color: #00ffff;
+    --secondary-color: #ff00ff;
+    --accent-color: #ffff00;
+    --text-color: #ffffff;
+    --background-color: rgba(0, 0, 0, 0.9);
+    --glow-intensity: 30px;
+}
+
+/* Sunset Theme */
+.theme-sunset {
+    --primary-color: #ff7b54;
+    --secondary-color: #ff6b9d;
+    --accent-color: #c44569;
+    --text-color: #ffffff;
+    --background-color: rgba(0, 0, 0, 0.8);
+}
+
+/* Ocean Theme */
+.theme-ocean {
+    --primary-color: #00d2ff;
+    --secondary-color: #3a7bd5;
+    --accent-color: #00c9ff;
+    --text-color: #ffffff;
+    --background-color: rgba(0, 0, 0, 0.8);
+}

@@ -351,13 +351,47 @@ app.get('/api/config', async (req, res) => {
 
 app.put('/api/config', async (req, res) => {
   try {
-    await updateInstanceConfig(INSTANCE_ID, req.body);
-    instanceConfig = await getInstanceConfig(INSTANCE_ID);
+    const config = req.body;
+    await updateInstanceConfig(INSTANCE_ID, config);
     res.json({ ok: true });
   } catch (error) {
     console.error('Failed to update instance config:', error);
     res.status(500).json({ error: 'Failed to update instance config' });
   }
+});
+
+app.get('/api/overlay-styles', (req, res) => {
+  const styles = [
+    { id: 'classic', name: 'Classic Progress Bar', description: 'Traditional horizontal progress bar' },
+    { id: 'circular', name: 'Circular Progress', description: 'Modern circular progress ring' },
+    { id: 'dashboard', name: 'Dashboard Style', description: 'Detailed dashboard with stats' },
+    { id: 'bubbles', name: 'Floating Bubbles', description: 'Animated bubble grid display' },
+    { id: 'minimalist', name: 'Minimalist Text', description: 'Clean text-only display' },
+    { id: 'showcase', name: 'Gift Showcase', description: 'Featured gift display with icon' }
+  ];
+  res.json(styles);
+});
+
+app.get('/api/themes', (req, res) => {
+  const themes = [
+    { id: 'dark', name: 'Dark Theme', colors: ['#ff6b6b', '#4ecdc4', '#45b7d1'] },
+    { id: 'light', name: 'Light Theme', colors: ['#e74c3c', '#3498db', '#2ecc71'] },
+    { id: 'neon', name: 'Neon Theme', colors: ['#00ffff', '#ff00ff', '#ffff00'] },
+    { id: 'sunset', name: 'Sunset Theme', colors: ['#ff7b54', '#ff6b9d', '#c44569'] },
+    { id: 'ocean', name: 'Ocean Theme', colors: ['#00d2ff', '#3a7bd5', '#00c9ff'] }
+  ];
+  res.json(themes);
+});
+
+app.get('/api/animations', (req, res) => {
+  const animations = [
+    { id: 'none', name: 'No Animation', description: 'Static display' },
+    { id: 'normal', name: 'Normal', description: 'Flash on gift received' },
+    { id: 'flash', name: 'Flash', description: 'Bright flash effect' },
+    { id: 'bounce', name: 'Bounce', description: 'Bouncing animation' },
+    { id: 'shake', name: 'Shake', description: 'Shaking effect' }
+  ];
+  res.json(animations);
 });
 
 /* ── Socket.IO initial emit ───────────────────────────────────────── */
