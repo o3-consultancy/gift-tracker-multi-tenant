@@ -18,7 +18,7 @@ providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
-    network: gift-tracker-network
+    network: gift-tracker-multi-tenant_gift-tracker-network
   file:
     directory: /etc/traefik/dynamic
     watch: true

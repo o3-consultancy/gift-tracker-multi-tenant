@@ -84,7 +84,7 @@ export async function createGiftTrackerInstance(instanceData) {
                 RestartPolicy: {
                     Name: 'unless-stopped'
                 },
-                NetworkMode: process.env.NODE_ENV === 'development' ? 'gift-tracker-network' : 'gift-tracker-multi-tenant_gift-tracker-network'
+                NetworkMode: 'gift-tracker-multi-tenant_gift-tracker-network'
             },
             Labels: {
                 'traefik.enable': 'true',
@@ -95,8 +95,8 @@ export async function createGiftTrackerInstance(instanceData) {
                 } : {}),
                 [`traefik.http.routers.gift-${name}.service`]: `gift-${name}`,
                 [`traefik.http.services.gift-${name}.loadbalancer.server.port`]: '3000',
-                [`traefik.http.routers.gift-${name}.middlewares`]: 'auth-basic',
-                'traefik.http.middlewares.auth-basic.basicauth.users': `admin:${password}`,
+                [`traefik.http.routers.gift-${name}.middlewares`]: `auth-${name}`,
+                [`traefik.http.middlewares.auth-${name}.basicauth.users`]: `admin:${password}`,
                 'gift-tracker.instance': name,
                 'gift-tracker.tiktok-username': tiktokUsername
             }
