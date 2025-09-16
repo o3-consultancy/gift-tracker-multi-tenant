@@ -3,7 +3,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
-import bcrypt from 'bcrypt';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -97,7 +96,7 @@ export async function createGiftTrackerInstance(instanceData) {
                 [`traefik.http.routers.gift-${name}.service`]: `gift-${name}`,
                 [`traefik.http.services.gift-${name}.loadbalancer.server.port`]: '3000',
                 [`traefik.http.routers.gift-${name}.middlewares`]: `auth-${name}`,
-                [`traefik.http.middlewares.auth-${name}.basicauth.users`]: `admin:${await bcrypt.hash(password, 10)}`,
+                [`traefik.http.middlewares.auth-${name}.basicauth.users`]: `admin:${password}`,
                 'gift-tracker.instance': name,
                 'gift-tracker.tiktok-username': tiktokUsername
             }
