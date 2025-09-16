@@ -144,7 +144,8 @@ router.post('/', async (req, res) => {
             subdomain,
             password,
             port,
-            config
+            config,
+            instanceId: result.id
         });
 
         // Update instance with container info

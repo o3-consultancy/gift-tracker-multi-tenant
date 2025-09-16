@@ -35,7 +35,8 @@ export async function createGiftTrackerInstance(instanceData) {
         subdomain,
         password,
         port,
-        config = {}
+        config = {},
+        instanceId
     } = instanceData;
 
     try {
@@ -67,7 +68,7 @@ export async function createGiftTrackerInstance(instanceData) {
             Env: [
                 `TIKTOK_USERNAME=${tiktokUsername}`,
                 `DASH_PASSWORD=${password}`,
-                `INSTANCE_ID=${result.id}`,
+                `INSTANCE_ID=${instanceId}`,
                 'PORT=3000',
                 'DB_HOST=postgres',
                 'DB_PORT=5432',
