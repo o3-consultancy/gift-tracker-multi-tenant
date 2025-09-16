@@ -78,16 +78,16 @@ router.get('/logs', async (req, res) => {
         const params = [];
 
         if (level) {
-            query += ' AND l.level = ?';
+            query += ' AND l.level = $' + (params.length + 1);
             params.push(level);
         }
 
         if (instance_id) {
-            query += ' AND l.instance_id = ?';
+            query += ' AND l.instance_id = $' + (params.length + 1);
             params.push(instance_id);
         }
 
-        query += ' ORDER BY l.timestamp DESC LIMIT ? OFFSET ?';
+        query += ' ORDER BY l.timestamp DESC LIMIT $' + (params.length + 1) + ' OFFSET $' + (params.length + 2);
         params.push(parseInt(limit), parseInt(offset));
 
         const logs = await runQuery(query, params);
@@ -125,7 +125,7 @@ router.put('/settings', async (req, res) => {
 
         for (const [key, value] of Object.entries(settings)) {
             await runUpdate(
-                'UPDATE settings SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE key = ?',
+                'UPDATE settings SET value = $1, updated_at = CURRENT_TIMESTAMP WHERE key = $2',
                 [value, key]
             );
         }

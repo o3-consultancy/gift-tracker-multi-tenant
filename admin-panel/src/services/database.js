@@ -57,7 +57,7 @@ export function runInsert(sql, params = []) {
                 reject(err);
             } else {
                 resolve({
-                    id: result.rows[0]?.id || result.insertId,
+                    id: result.rows[0]?.id,
                     changes: result.rowCount
                 });
             }

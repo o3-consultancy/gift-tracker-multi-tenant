@@ -61,7 +61,7 @@ router.get('/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const instance = await runQuery(
-            'SELECT * FROM instances WHERE id = ?',
+            'SELECT * FROM instances WHERE id = $1',
             [id]
         );
 
@@ -97,7 +97,7 @@ router.post('/', async (req, res) => {
 
         // Check if name or subdomain already exists
         const existing = await runQuery(
-            'SELECT id FROM instances WHERE name = ? OR subdomain = ?',
+            'SELECT id FROM instances WHERE name = $1 OR subdomain = $2',
             [name, subdomain]
         );
 
@@ -113,7 +113,8 @@ router.post('/', async (req, res) => {
         // Create instance in database
         const result = await runInsert(`
       INSERT INTO instances (name, tiktok_username, subdomain, password, port, config, data_path)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id
     `, [
             name,
             tiktokUsername,
@@ -136,13 +137,13 @@ router.post('/', async (req, res) => {
 
         // Update instance with container info
         await runUpdate(
-            'UPDATE instances SET status = ? WHERE id = ?',
+            'UPDATE instances SET status = $1 WHERE id = $2',
             ['running', result.id]
         );
 
         // Log the creation
         await runInsert(
-            'INSERT INTO logs (instance_id, level, message) VALUES (?, ?, ?)',
+            'INSERT INTO logs (instance_id, level, message) VALUES ($1, $2, $3) RETURNING id',
             [result.id, 'info', `Instance created and started successfully`]
         );
 
@@ -171,7 +172,7 @@ router.put('/:id', async (req, res) => {
 
         // Get current instance
         const instance = await runQuery(
-            'SELECT * FROM instances WHERE id = ?',
+            'SELECT * FROM instances WHERE id = $1',
             [id]
         );
 
@@ -186,17 +187,17 @@ router.put('/:id', async (req, res) => {
         const values = [];
 
         if (tiktokUsername) {
-            updates.push('tiktok_username = ?');
+            updates.push('tiktok_username = $' + (values.length + 1));
             values.push(tiktokUsername);
         }
 
         if (password) {
-            updates.push('password = ?');
+            updates.push('password = $' + (values.length + 1));
             values.push(password);
         }
 
         if (config) {
-            updates.push('config = ?');
+            updates.push('config = $' + (values.length + 1));
             values.push(JSON.stringify(config));
         }
 
@@ -208,7 +209,7 @@ router.put('/:id', async (req, res) => {
         values.push(id);
 
         await runUpdate(
-            `UPDATE instances SET ${updates.join(', ')} WHERE id = ?`,
+            `UPDATE instances SET ${updates.join(', ')} WHERE id = $${values.length}`,
             values
         );
 
@@ -219,7 +220,7 @@ router.put('/:id', async (req, res) => {
             await startGiftTrackerInstance(containerName);
 
             await runInsert(
-                'INSERT INTO logs (instance_id, level, message) VALUES (?, ?, ?)',
+                'INSERT INTO logs (instance_id, level, message) VALUES ($1, $2, $3) RETURNING id',
                 [id, 'info', 'Instance restarted due to configuration change']
             );
         }
@@ -238,7 +239,7 @@ router.post('/:id/start', async (req, res) => {
         const { id } = req.params;
 
         const instance = await runQuery(
-            'SELECT * FROM instances WHERE id = ?',
+            'SELECT * FROM instances WHERE id = $1',
             [id]
         );
 
@@ -250,12 +251,12 @@ router.post('/:id/start', async (req, res) => {
         await startGiftTrackerInstance(containerName);
 
         await runUpdate(
-            'UPDATE instances SET status = ? WHERE id = ?',
+            'UPDATE instances SET status = $1 WHERE id = $2',
             ['running', id]
         );
 
         await runInsert(
-            'INSERT INTO logs (instance_id, level, message) VALUES (?, ?, ?)',
+            'INSERT INTO logs (instance_id, level, message) VALUES ($1, $2, $3) RETURNING id',
             [id, 'info', 'Instance started']
         );
 
@@ -273,7 +274,7 @@ router.post('/:id/stop', async (req, res) => {
         const { id } = req.params;
 
         const instance = await runQuery(
-            'SELECT * FROM instances WHERE id = ?',
+            'SELECT * FROM instances WHERE id = $1',
             [id]
         );
 
@@ -285,12 +286,12 @@ router.post('/:id/stop', async (req, res) => {
         await stopGiftTrackerInstance(containerName);
 
         await runUpdate(
-            'UPDATE instances SET status = ? WHERE id = ?',
+            'UPDATE instances SET status = $1 WHERE id = $2',
             ['stopped', id]
         );
 
         await runInsert(
-            'INSERT INTO logs (instance_id, level, message) VALUES (?, ?, ?)',
+            'INSERT INTO logs (instance_id, level, message) VALUES ($1, $2, $3) RETURNING id',
             [id, 'info', 'Instance stopped']
         );
 
@@ -308,7 +309,7 @@ router.delete('/:id', async (req, res) => {
         const { id } = req.params;
 
         const instance = await runQuery(
-            'SELECT * FROM instances WHERE id = ?',
+            'SELECT * FROM instances WHERE id = $1',
             [id]
         );
 
@@ -328,7 +329,7 @@ router.delete('/:id', async (req, res) => {
         }
 
         // Remove from database
-        await runUpdate('DELETE FROM instances WHERE id = ?', [id]);
+        await runUpdate('DELETE FROM instances WHERE id = $1', [id]);
 
         res.json({ message: 'Instance deleted successfully' });
 
@@ -345,7 +346,7 @@ router.get('/:id/logs', async (req, res) => {
         const { tail = 100 } = req.query;
 
         const instance = await runQuery(
-            'SELECT * FROM instances WHERE id = ?',
+            'SELECT * FROM instances WHERE id = $1',
             [id]
         );
 
@@ -370,7 +371,7 @@ router.get('/:id/status', async (req, res) => {
         const { id } = req.params;
 
         const instance = await runQuery(
-            'SELECT * FROM instances WHERE id = ?',
+            'SELECT * FROM instances WHERE id = $1',
             [id]
         );
 
