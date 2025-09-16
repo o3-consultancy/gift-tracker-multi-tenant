@@ -217,25 +217,53 @@ export async function getGiftGroups(instanceId) {
         return {};
     }
 
-    const groups = await runQuery(`
-        SELECT group_id, name, gift_ids, color, goal
-        FROM gift_groups 
-        WHERE instance_id = $1
-        ORDER BY created_at ASC
-    `, [instanceId]);
+    try {
+        // Try the new schema first (with group_id column)
+        const groups = await runQuery(`
+            SELECT group_id, name, gift_ids, color, goal
+            FROM gift_groups 
+            WHERE instance_id = $1
+            ORDER BY created_at ASC
+        `, [instanceId]);
 
-    // Convert to the format expected by the frontend
-    const groupsObj = {};
-    groups.forEach(group => {
-        groupsObj[group.group_id] = {
-            name: group.name,
-            giftIds: group.gift_ids || [],
-            color: group.color,
-            goal: group.goal
-        };
-    });
+        // Convert to the format expected by the frontend
+        const groupsObj = {};
+        groups.forEach(group => {
+            groupsObj[group.group_id] = {
+                name: group.name,
+                giftIds: group.gift_ids || [],
+                color: group.color,
+                goal: group.goal
+            };
+        });
 
-    return groupsObj;
+        return groupsObj;
+    } catch (error) {
+        if (error.code === '42703') { // Column doesn't exist
+            console.log('Falling back to old schema for gift_groups');
+            // Fall back to old schema (without group_id column)
+            const groups = await runQuery(`
+                SELECT id, group_name, gift_ids
+                FROM gift_groups 
+                WHERE instance_id = $1
+                ORDER BY created_at ASC
+            `, [instanceId]);
+
+            // Convert to the format expected by the frontend
+            const groupsObj = {};
+            groups.forEach(group => {
+                groupsObj[group.id] = {
+                    name: group.group_name || 'Group ' + group.id,
+                    giftIds: group.gift_ids || [],
+                    color: '#0cf',
+                    goal: 0
+                };
+            });
+
+            return groupsObj;
+        }
+        throw error;
+    }
 }
 
 export async function saveGiftGroups(instanceId, groups) {
@@ -244,10 +272,24 @@ export async function saveGiftGroups(instanceId, groups) {
 
     // Insert new groups
     for (const [groupId, groupData] of Object.entries(groups)) {
-        await runInsert(`
-            INSERT INTO gift_groups (instance_id, group_id, name, gift_ids, color, goal)
-            VALUES ($1, $2, $3, $4, $5, $6)
-        `, [instanceId, groupId, groupData.name, groupData.giftIds || [], groupData.color, groupData.goal || 0]);
+        try {
+            // Try the new schema first (with group_id column)
+            await runInsert(`
+                INSERT INTO gift_groups (instance_id, group_id, name, gift_ids, color, goal)
+                VALUES ($1, $2, $3, $4, $5, $6)
+            `, [instanceId, groupId, groupData.name, groupData.giftIds || [], groupData.color, groupData.goal || 0]);
+        } catch (error) {
+            if (error.code === '42703') { // Column doesn't exist
+                console.log('Falling back to old schema for saving gift_groups');
+                // Fall back to old schema (without group_id column)
+                await runInsert(`
+                    INSERT INTO gift_groups (instance_id, group_name, gift_ids)
+                    VALUES ($1, $2, $3)
+                `, [instanceId, groupData.name, groupData.giftIds || []]);
+            } else {
+                throw error;
+            }
+        }
     }
 }
 
