@@ -47,6 +47,8 @@ services:
       - "traefik.http.routers.admin.tls.certresolver=letsencrypt"
       - "traefik.http.routers.admin.service=admin-panel"
       - "traefik.http.services.admin-panel.loadbalancer.server.port=3000"
+      - "traefik.http.routers.admin.middlewares=auth-admin"
+      - "traefik.http.middlewares.auth-admin.basicauth.users=admin:$$2y$$10$$8K1p/a0dL2Lz8bVK5VQhCOYz6Vz8K1p/a0dL2Lz8bVK5VQhCOYz6Vz"
 
   # Example Gift Tracker Instance (will be dynamically created)
   gift-tracker-example:

@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs-extra';
+import bcrypt from 'bcrypt';
 
 import { initializeDatabase } from './services/database.js';
 import { initializeDocker } from './services/docker.js';
@@ -53,15 +54,36 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Authentication middleware
+const authenticateAdmin = (req, res, next) => {
+    const auth = req.headers.authorization;
+
+    if (!auth || !auth.startsWith('Basic ')) {
+        res.setHeader('WWW-Authenticate', 'Basic realm="Admin Panel"');
+        return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const credentials = Buffer.from(auth.slice(6), 'base64').toString();
+    const [username, password] = credentials.split(':');
+
+    // Check credentials (admin/admin123)
+    if (username === 'admin' && password === 'admin123') {
+        return next();
+    }
+
+    res.setHeader('WWW-Authenticate', 'Basic realm="Admin Panel"');
+    return res.status(401).json({ error: 'Invalid credentials' });
+};
+
 // Static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// API Routes
-app.use('/api/instances', instanceRoutes);
-app.use('/api/admin', adminRoutes);
+// API Routes with authentication
+app.use('/api/instances', authenticateAdmin, instanceRoutes);
+app.use('/api/admin', authenticateAdmin, adminRoutes);
 
-// Serve admin panel
-app.get('/', (req, res) => {
+// Serve admin panel with authentication
+app.get('/', authenticateAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
 
