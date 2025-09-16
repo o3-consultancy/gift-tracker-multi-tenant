@@ -1,4 +1,4 @@
-# version: '3.8' # Removed as it's obsolete in newer Docker Compose versions
+version: '3.8'
 
 services:
   # PostgreSQL Database

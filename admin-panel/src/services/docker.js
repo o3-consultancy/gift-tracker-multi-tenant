@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
-import { createUser, getUserByUsername } from './auth.js';
+import { createUser } from './auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -108,21 +108,15 @@ export async function createGiftTrackerInstance(instanceData) {
             }
         };
 
-        // Create user in database for this instance (only if it doesn't exist)
+        // Create user in database for this instance
         try {
-            // Check if user already exists
-            const existingUser = await getUserByUsername(name);
-            if (!existingUser) {
-                await createUser({
-                    username: name,
-                    password: password,
-                    email: `${name}@localhost`,
-                    role: 'user'
-                });
-                console.log(`Created user in database: ${name}`);
-            } else {
-                console.log(`User already exists in database: ${name}`);
-            }
+            await createUser({
+                username: name,
+                password: password,
+                email: `${name}@localhost`,
+                role: 'user'
+            });
+            console.log(`Created user in database: ${name}`);
         } catch (error) {
             console.error(`Failed to create user for instance ${name}:`, error);
             // Continue with container creation even if user creation fails
@@ -306,7 +300,6 @@ export async function getNextAvailablePort() {
         return port;
     } catch (error) {
         console.error('Error getting next available port:', error);
-        // Fallback to a simple port assignment
-        return 3001;
+        throw error;
     }
 }
